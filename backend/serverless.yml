@@ -1,0 +1,35 @@
+service: football-competition
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: ap-southeast-1
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: true
+      - http:
+          path: "{proxy+}"
+          method: ANY
+          cors: true
+
+resources:
+  Resources:
+    footballCompetition:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: footballCompetition
+        AttributeDefinitions:
+          - AttributeName: teamName
+            AttributeType: S
+        KeySchema:
+          - AttributeName: teamName
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
