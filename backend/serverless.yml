@@ -1,15 +1,29 @@
 service: football-competition
-frameworkVersion: "3"
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs16.x
   stage: dev
   region: ap-southeast-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:ap-southeast-1:*:table/footballCompetition"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource: "arn:aws:dynamodb:ap-southeast-1:*:table/footballCompetition/index/*"
 
 functions:
-  hello:
-    handler: handler.hello
+  base:
+    handler: src/app.handler
     events:
       - http:
           path: /
@@ -19,6 +33,20 @@ functions:
           path: "{proxy+}"
           method: ANY
           cors: true
+  # getTeam:
+  #   handler: src/handler.getTeam
+  #   events:
+  #     - http:
+  #         path: /team/{teamName}
+  #         method: get
+  #         cors: true
+  # updateMatch:
+  #   handler: src/handler.updateMatch
+  #   events:
+  #     - http:
+  #         path: /team/{teamName}
+  #         method: get
+  #         cors: true
 
 resources:
   Resources:
