@@ -23,9 +23,6 @@ AWS.config.update(awsConfig);
 
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const tableName = "footballCompetition";
-const headers = {
-  "content-type": "application/json",
-};
 
 // ADD NEW TEAM
 // --------------------------------------------
@@ -45,9 +42,121 @@ app.post("/team", (req, res) => {
     if (err) {
       res.status(400).send({ err });
     } else {
-      res.status(201).send({
-        body: team,
-      });
+      res.status(201).send(team);
+    }
+  });
+});
+
+// GET TEAM DETAILS
+// --------------------------------------------
+app.post("/getTeamDetails", (req, res) => {
+  const params = {
+    TableName: tableName,
+    Key: { teamName: req.body.teamName },
+  };
+  dynamoDB.get(params, function (err, data) {
+    if (err) {
+      res.status(400).send({ err });
+    } else {
+      res.status(200).send(data.Item);
+    }
+  });
+});
+
+// LIST DETAILS OF ALL TEAMS
+// --------------------------------------------
+app.post("/getTeams", (req, res) => {
+  const params = {
+    TableName: tableName,
+  };
+  dynamoDB.scan(params, function (err, data) {
+    if (err) {
+      res.status(400).send({ err });
+    } else {
+      res.status(200).send(data.Items);
+    }
+  });
+});
+
+// REMOVE TEAM
+// --------------------------------------------
+app.post("/removeTeam", (req, res) => {
+  const params = {
+    TableName: tableName,
+    Key: { teamName: req.body.teamName },
+  };
+  dynamoDB.delete(params, function (err, data) {
+    if (err) {
+      res.status(400).send({ err });
+    } else {
+      res.sendStatus(204);
+    }
+  });
+});
+
+// REMOVE ALL TEAMs
+// --------------------------------------------
+app.post("/removeTeams", async (req, res) => {
+  var params = {
+    TableName: tableName,
+  };
+  let items = [];
+  let group = [];
+  let data = await dynamoDB
+    .scan(params, function (err, data) {
+      if (err) {
+        res.status(400).send({ err });
+      } else {
+        console.log(data);
+      }
+    })
+    .promise();
+  items = [...items, ...data.Items];
+  for (const i of data.Items) {
+    const deleteReq = { DeleteRequest: { Key: {} } };
+    deleteReq.DeleteRequest.Key["teamName"] = i.teamName;
+    group.push(deleteReq);
+  }
+  params = {
+    RequestItems: {
+      [tableName]: group,
+    },
+  };
+  dynamoDB.batchWrite(params, function (err, data) {
+    if (err) {
+      res.status(400).send({ err });
+    } else {
+      res.sendStatus(204);
+    }
+  });
+});
+
+// UPDATE MATCH
+// --------------------------------------------
+app.post("/updateMatch", (req, res) => {
+  var params = {
+    TableName: tableName,
+    Key: { teamName: req.body.teamName },
+  };
+  var updateObj = {
+    TableName: tableName,
+    Key: {
+      teamName: "",
+    },
+  };
+  if (req.body.team1Goals === req.body.team2Goals) {
+    updateObj.TableName = req.body.team1;
+    dynamoDB.update(params, function (err, data) {
+      if (err) {
+        res.status(400).send({ err });
+      }
+    });
+  }
+  dynamoDB.delete(params, function (err, data) {
+    if (err) {
+      res.status(400).send({ err });
+    } else {
+      res.sendStatus(204);
     }
   });
 });
