@@ -150,51 +150,42 @@ app.post("/updateMatch", async (req, res) => {
   if (req.body.team1Goals === req.body.team2Goals) {
     draw = true;
     params.Key.teamName = req.body.team1;
-    // updateObj.Key.teamName = req.body.team1;
+    updateObj.Key.teamName = req.body.team1;
     console.log("Check 1");
     await dynamoDB
-      .get(params, function (err, data) {
-        if (err) {
-          res.status(400).send({ err });
-        } else {
-          // params.Key.teamName = req.body.team1;
-          updateObj.Key.teamName = req.body.team1;
-          console.log(`team 1 data ${JSON.stringify(data)}`);
-          console.log(`team 1 pre updateObj ${JSON.stringify(updateObj)}`);
-          updateObj["UpdateExpression"] = "set points = :point, ";
-          updateObj["ExpressionAttributeValues"] = {
-            ":point": data.Item.points + 1,
-          };
-          updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-          updateObj["ExpressionAttributeValues"][":goals"] =
-            data.Item.goalsScored + req.body.team1Goals;
-          updateObj["UpdateExpression"] +=
-            "matchHistory = list_append(matchHistory, :matchResults)";
-          updateObj["ExpressionAttributeValues"][":matchResults"] = ["draw"];
-          console.log(`team 1 post updateObj ${JSON.stringify(updateObj)}`);
-          // await dynamoDB
-          //   .update(updateObj, function (err, data) {
-          //     if (err) {
-          //       res.status(400).send({ err });
-          //     }
-          //   })
-          //   .promise();
-        }
+      .get(params)
+      .promise()
+      .then((data) => {
+        console.log(`team 1 data ${JSON.stringify(data)}`);
+        console.log(`team 1 pre updateObj ${JSON.stringify(updateObj)}`);
+        updateObj["UpdateExpression"] = "set points = :point, ";
+        updateObj["ExpressionAttributeValues"] = {
+          ":point": data.Item.points + 1,
+        };
+        updateObj["UpdateExpression"] += "goalsScored = :goals, ";
+        updateObj["ExpressionAttributeValues"][":goals"] =
+          data.Item.goalsScored + req.body.team1Goals;
+        updateObj["UpdateExpression"] +=
+          "matchHistory = list_append(matchHistory, :matchResults)";
+        updateObj["ExpressionAttributeValues"][":matchResults"] = ["draw"];
+        console.log(`team 1 post updateObj ${JSON.stringify(updateObj)}`);
       })
-      .promise();
-    dynamoDB.update(updateObj, function (err, data) {
-      if (err) {
+      .catch((err) => {
         res.status(400).send({ err });
-      }
-    });
+      });
+    await dynamoDB
+      .update(updateObj)
+      .promise()
+      .catch((err) => {
+        res.status(400).send({ err });
+      });
     params.Key.teamName = req.body.team2;
-    // updateObj.Key.teamName = req.body.team2;
-    dynamoDB.get(params, function (err, data) {
-      if (err) {
-        res.status(400).send({ err });
-      } else {
-        // params.Key.teamName = req.body.team2;
-        updateObj.Key.teamName = req.body.team2;
+    updateObj.Key.teamName = req.body.team2;
+    console.log("Check 1.2");
+    await dynamoDB
+      .get(params)
+      .promise()
+      .then((data) => {
         console.log(`team 2 data ${JSON.stringify(data)}`);
         console.log(`team 2 pre updateObj ${JSON.stringify(updateObj)}`);
         updateObj["UpdateExpression"] = "set points = :point, ";
@@ -208,44 +199,37 @@ app.post("/updateMatch", async (req, res) => {
           "matchHistory = list_append(matchHistory, :matchResults)";
         updateObj["ExpressionAttributeValues"][":matchResults"] = ["draw"];
         console.log(`team 2 post updateObj ${JSON.stringify(updateObj)}`);
-        // await dynamoDB
-        //   .update(updateObj, function (err, data) {
-        //     if (err) {
-        //       res.status(400).send({ err });
-        //     } else {
-        //       res
-        //         .status(200)
-        //         .send({ message: "Draw Updated!", body: req.body });
-        //     }
-        //   })
-        //   .promise();
-      }
-    });
-    dynamoDB.update(updateObj, function (err, data) {
-      if (err) {
+      })
+      .catch((err) => {
         res.status(400).send({ err });
-      } else {
+      });
+    await dynamoDB
+      .update(updateObj)
+      .promise()
+      .then((data) => {
         res.status(200).send({ message: "Draw Updated!", body: req.body });
-      }
-    });
+      })
+      .catch((err) => {
+        res.status(400).send({ err });
+      });
   } else if (req.body.team1Goals > req.body.team2Goals) {
     winner = { teamName: req.body.team1, goalsScored: req.body.team1Goals };
     loser = { teamName: req.body.team2, goalsScored: req.body.team2Goals };
   } else {
     winner = { teamName: req.body.team2, goalsScored: req.body.team2Goals };
     loser = { teamName: req.body.team1, goalsScored: req.body.team1Goals };
-    // params.Key.teamName = req.body.team2;
-    // updateObj.Key.teamName = req.body.team2;
   }
   if (!draw) {
     console.log(draw);
     console.log("Not Draw");
     params.Key.teamName = winner.teamName;
-    updateObj.Key.teamName = winner.goalsScored;
-    dynamoDB.get(params, function (err, data) {
-      if (err) {
-        res.status(400).send({ err });
-      } else {
+    updateObj.Key.teamName = winner.teamName;
+    await dynamoDB
+      .get(params)
+      .promise()
+      .then((data) => {
+        console.log(`winner data ${JSON.stringify(data)}`);
+        console.log(`winner pre updateObj ${JSON.stringify(updateObj)}`);
         updateObj["UpdateExpression"] = "set points = :point, ";
         updateObj["ExpressionAttributeValues"] = {
           ":point": data.Item.points + 3,
@@ -256,36 +240,49 @@ app.post("/updateMatch", async (req, res) => {
         updateObj["UpdateExpression"] +=
           "matchHistory = list_append(matchHistory, :matchResults)";
         updateObj["ExpressionAttributeValues"][":matchResults"] = ["win"];
-        dynamoDB.update(updateObj, function (err, data) {
-          if (err) {
-            res.status(400).send({ err });
-          }
-        });
-      }
-    });
-    params.Key.teamName = loser.teamName;
-    updateObj.Key.teamName = loser.goalsScored;
-    dynamoDB.get(params, function (err, data) {
-      if (err) {
+        console.log(`winner post updateObj ${JSON.stringify(updateObj)}`);
+      })
+      .catch((err) => {
         res.status(400).send({ err });
-      } else {
-        updateObj["UpdateExpression"] = "set goalsScored = :goals, ";
+      });
+    await dynamoDB
+      .update(updateObj)
+      .promise()
+      .catch((err) => {
+        res.status(400).send({ err });
+      });
+    params.Key.teamName = loser.teamName;
+    updateObj.Key.teamName = loser.teamName;
+    await dynamoDB
+      .get(params)
+      .promise()
+      .then((data) => {
+        console.log(`loser data ${JSON.stringify(data)}`);
+        console.log(`loser pre updateObj ${JSON.stringify(updateObj)}`);
+        updateObj["UpdateExpression"] = "set points = :point, ";
+        updateObj["ExpressionAttributeValues"] = {
+          ":point": data.Item.points,
+        };
+        updateObj["UpdateExpression"] += "goalsScored = :goals, ";
         updateObj["ExpressionAttributeValues"][":goals"] =
           data.Item.goalsScored + loser.goalsScored;
         updateObj["UpdateExpression"] +=
           "matchHistory = list_append(matchHistory, :matchResults)";
         updateObj["ExpressionAttributeValues"][":matchResults"] = ["loss"];
-        dynamoDB.update(updateObj, function (err, data) {
-          if (err) {
-            res.status(400).send({ err });
-          } else {
-            res
-              .status(200)
-              .send({ message: "Scores Updated!", body: req.body });
-          }
-        });
-      }
-    });
+        console.log(`loser post updateObj ${JSON.stringify(updateObj)}`);
+      })
+      .catch((err) => {
+        res.status(400).send({ err });
+      });
+    await dynamoDB
+      .update(updateObj)
+      .promise()
+      .then((data) => {
+        res.status(200).send({ message: "Match Updated!", body: req.body });
+      })
+      .catch((err) => {
+        res.status(400).send({ err });
+      });
   }
 });
 
