@@ -24,9 +24,26 @@ AWS.config.update(awsConfig);
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const tableName = "footballCompetition";
 
+const getTeamByName = async (name) => {
+  var output = [];
+  const params = {
+    TableName: "footballCompetition",
+    Key: { teamName: name },
+  };
+  await dynamoDB
+    .get(params)
+    .promise()
+    .then((data) => {
+      if (data.Item) {
+        output.push(data.Item);
+      }
+    });
+  return output;
+};
+
 // ADD NEW TEAM
 // --------------------------------------------
-app.post("/team", (req, res) => {
+app.post("/team", async (req, res) => {
   const team = {
     teamName: req.body.teamName,
     registrationDate: req.body.registrationDate,
@@ -37,32 +54,29 @@ app.post("/team", (req, res) => {
     qualify: false,
   };
   const obj = {
-    TableName: "footballCompetition",
+    TableName: tableName,
     Item: team,
   };
-  dynamoDB.put(obj, function (err, data) {
-    if (err) {
-      res.status(400).send({ err });
-    } else {
+  await dynamoDB
+    .put(obj)
+    .promise()
+    .then(() => {
       res.status(201).send(team);
-    }
-  });
+    })
+    .catch((err) => {
+      res.status(400).send({ err });
+    });
 });
 
 // GET TEAM DETAILS
 // --------------------------------------------
 app.post("/getTeamDetails", async (req, res) => {
-  const params = {
-    TableName: tableName,
-    Key: { teamName: req.body.teamName },
-  };
-  dynamoDB.get(params, function (err, data) {
-    if (err) {
-      res.status(400).send({ err });
-    } else {
-      res.status(200).send(data.Item);
-    }
-  });
+  data = await getTeamByName(req.body.teamName);
+  if (data.length === 0) {
+    res.status(404).send({ message: "Team Not Found!" });
+  } else {
+    res.status(200).send({ data });
+  }
 });
 
 // LIST DETAILS OF ALL TEAMS
@@ -134,6 +148,12 @@ app.post("/removeTeams", async (req, res) => {
 // UPDATE MATCH
 // --------------------------------------------
 app.post("/updateMatch", async (req, res) => {
+  team1 = await getTeamByName(req.body.team1);
+  team2 = await getTeamByName(req.body.team2);
+  if (team1.length === 0 || team2.length === 0) {
+    res.status(404).send({ message: "Team Not Found!" });
+    return;
+  }
   var params = {
     TableName: tableName,
     Key: { teamName: "" },
