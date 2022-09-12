@@ -44,28 +44,108 @@ const getTeamByName = async (name) => {
 // ADD NEW TEAM
 // --------------------------------------------
 app.post("/team", async (req, res) => {
-  const team = {
-    teamName: req.body.teamName,
-    registrationDate: req.body.registrationDate,
-    groupNumber: req.body.groupNumber,
-    points: 0,
-    goalsScored: 0,
-    matchHistory: [],
-    qualify: false,
-  };
-  const obj = {
-    TableName: tableName,
-    Item: team,
-  };
-  await dynamoDB
-    .put(obj)
-    .promise()
-    .then(() => {
-      res.status(201).send(team);
-    })
-    .catch((err) => {
-      res.status(400).send({ err });
+  input = req.body.text.split(`\n`);
+  var output = [];
+  var remainingItems = input.length;
+  var formatted_input = [];
+  for (const entry of input) {
+    fields = entry.split(` `);
+    formatted_input.push({
+      teamName: fields[0],
+      registrationDate: fields[1],
+      groupNumber: fields[2],
     });
+  }
+  var params = {
+    RequestItems: {
+      footballCompetition: [],
+    },
+  };
+  console.log(formatted_input);
+
+  // check for previously created teams
+  const currentTeams = new Set();
+  await dynamoDB
+    .scan({
+      TableName: tableName,
+    })
+    .promise()
+    .then((data) => {
+      for (item of data.Items) {
+        currentTeams.add(item.teamName);
+      }
+    });
+
+  // batch write
+  for (const entry of formatted_input) {
+    if (!currentTeams.has(entry.teamName)) {
+      params.RequestItems.footballCompetition.push({
+        PutRequest: {
+          Item: {
+            teamName: entry.teamName,
+            registrationDate: entry.registrationDate,
+            groupNumber: entry.groupNumber,
+            points: 0,
+            goalsScored: 0,
+            matchHistory: [],
+            qualify: false,
+          },
+        },
+      });
+    }
+    remainingItems -= 1;
+    if (
+      (params.RequestItems.footballCompetition.length === 25 ||
+        remainingItems < 1) &
+      (params.RequestItems.footballCompetition.length >= 1)
+    ) {
+      await dynamoDB
+        .batchWrite(params)
+        .promise()
+        .catch((err) => {
+          res.status(400).send({ err });
+        });
+      output.push(params.RequestItems.footballCompetition);
+      params.RequestItems.footballCompetition = [];
+    }
+  }
+  // console.log(JSON.stringify(params));
+
+  // const team = {
+  //   teamName: req.body.teamName,
+  //   registrationDate: req.body.registrationDate,
+  //   groupNumber: req.body.groupNumber,
+  //   points: 0,
+  //   goalsScored: 0,
+  //   matchHistory: [],
+  //   qualify: false,
+  // };
+  // const obj = {
+  //   TableName: tableName,
+  //   Item: team,
+  // };
+  // await dynamoDB
+  //   .put(obj)
+  //   .promise()
+  //   .then(() => {
+  //     res.status(201).send(team);
+  //   })
+  //   .catch((err) => {
+  //     res.status(400).send({ err });
+  //   });
+
+  // await dynamoDB
+  //   .batchWrite(params)
+  //   .promise()
+  //   .then(() => {
+  //     res.status(201).send(params);
+  //   })
+  //   .catch((err) => {
+  //     res.status(400).send({ err });
+  //   });
+  if (!res.headersSent) {
+    res.status(201).send(output);
+  }
 });
 
 // GET TEAM DETAILS
