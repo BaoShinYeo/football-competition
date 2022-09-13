@@ -143,40 +143,44 @@ app.post("/getTeams", async (req, res) => {
   const params = {
     TableName: tableName,
   };
-  var output = {};
-  await dynamoDB
+  // var output = {};
+  var data = await dynamoDB
     .scan(params)
     .promise()
     .then((data) => {
-      var groups = {};
-      for (const team in data.Items) {
-        if (data.Items[team].groupNumber in groups) {
-          groups[data.Items[team].groupNumber][data.Items[team].teamName] = {
-            teamName: data.Items[team].teamName,
-            registrationDate: data.Items[team].registrationDate,
-            points: data.Items[team].points,
-            altPoints: data.Items[team].altPoints,
-            goalsScored: data.Items[team].goalsScored,
-            matchHistory: data.Items[team].matchHistory,
-          };
-        } else {
-          groups[data.Items[team].groupNumber] = {};
-          groups[data.Items[team].groupNumber][data.Items[team].teamName] = {
-            teamName: data.Items[team].teamName,
-            registrationDate: data.Items[team].registrationDate,
-            points: data.Items[team].points,
-            altPoints: data.Items[team].altPoints,
-            goalsScored: data.Items[team].goalsScored,
-            matchHistory: data.Items[team].matchHistory,
-          };
-        }
-        output = data.Items;
-      }
-      if (!res.headersSent) {
-        res.status(200).send(output);
-      }
-      console.log(JSON.stringify(groups));
+      res.status(200).send(data.Items);
+      return data;
+      // var groups = {};
+      // for (const team in data.Items) {
+      //   if (data.Items[team].groupNumber in groups) {
+      //     groups[data.Items[team].groupNumber][data.Items[team].teamName] = {
+      //       teamName: data.Items[team].teamName,
+      //       registrationDate: data.Items[team].registrationDate,
+      //       points: data.Items[team].points,
+      //       altPoints: data.Items[team].altPoints,
+      //       goalsScored: data.Items[team].goalsScored,
+      //       matchHistory: data.Items[team].matchHistory,
+      //     };
+      //   } else {
+      //     groups[data.Items[team].groupNumber] = {};
+      //     groups[data.Items[team].groupNumber][data.Items[team].teamName] = {
+      //       teamName: data.Items[team].teamName,
+      //       registrationDate: data.Items[team].registrationDate,
+      //       points: data.Items[team].points,
+      //       altPoints: data.Items[team].altPoints,
+      //       goalsScored: data.Items[team].goalsScored,
+      //       matchHistory: data.Items[team].matchHistory,
+      //     };
+      //   }
+      //   output = data.Items;
+      // }
+      // if (!res.headersSent) {
+      //   res.status(200).send(output);
+      // }
+      // console.log(JSON.stringify(groups));
     });
+  console.log(data);
+  console.log(data.Items);
 });
 
 // REMOVE TEAM
@@ -204,16 +208,12 @@ app.post("/removeTeams", async (req, res) => {
   var items = [];
   var group = [];
   var data = await dynamoDB
-    .scan(params, function (err, data) {
-      if (err) {
-        res.status(400).send({ err });
-      }
-    })
+    .scan(params)
     .promise()
     .catch((err) => {
       res.status(400).send({ err });
     });
-  console.log(data);
+  console.log(`${JSON.stringify(data)}`);
   items = [...items, ...data.Items];
   var remainingItems = items.length;
   for (const i of data.Items) {
@@ -274,6 +274,7 @@ app.post("/updateMatch", async (req, res) => {
 
   // check for previously created teams
   const currentTeams = new Set();
+  const currentTeamInfo = [];
   await dynamoDB
     .scan({
       TableName: tableName,
@@ -282,37 +283,49 @@ app.post("/updateMatch", async (req, res) => {
     .then((data) => {
       for (item of data.Items) {
         currentTeams.add(item.teamName);
+        currentTeamInfo.push(item);
       }
     });
-  var updateTeamInfo = {};
+  // var updateTeamInfo = {};
   const updateTeam = (name, goals, result) => {
-    var points = 3;
-    var altPoints = 5;
+    var addPoints = 3;
+    var addAltPoints = 5;
     if (result === "draw") {
-      points = 1;
-      altPoints = 3;
+      addPoints = 1;
+      addAltPoints = 3;
     } else if (result === "loss") {
-      points = 0;
-      altPoints = 1;
+      addPoints = 0;
+      addAltPoints = 1;
     }
-    if (name in updateTeamInfo) {
-      console.log(`pre ${JSON.stringify(updateTeamInfo[name])}`);
-      updateTeamInfo[name].newPoints += points;
-      updateTeamInfo[name].newAltPoints += altPoints;
-      updateTeamInfo[name].goals += goals;
-      updateTeamInfo[name].matchHistory.push(result);
-      console.log(`post ${JSON.stringify(updateTeamInfo[name])}`);
-    } else {
-      updateTeamInfo[name] = {};
-      console.log(`pre ${JSON.stringify(updateTeamInfo[name])}`);
-      updateTeamInfo[name]["teamName"] = name;
-      updateTeamInfo[name]["newPoints"] = points;
-      updateTeamInfo[name]["newAltPoints"] = altPoints;
-      updateTeamInfo[name]["goals"] = goals;
-      updateTeamInfo[name]["matchHistory"] = [result];
-      console.log(`post ${JSON.stringify(updateTeamInfo[name])}`);
-    }
+    currentTeamInfo.find((team, index) => {
+      if (team.teamName === name) {
+        currentTeamInfo[index].points += addPoints;
+        currentTeamInfo[index].altPoints += addAltPoints;
+        currentTeamInfo[index].goalsScored += goals;
+        currentTeamInfo[index].matchHistory.push(result);
+        return true; // stop searching
+      }
+    });
   };
+
+  //   if (name in updateTeamInfo) {
+  //     console.log(`pre ${JSON.stringify(updateTeamInfo[name])}`);
+  //     updateTeamInfo[name].newPoints += points;
+  //     updateTeamInfo[name].newAltPoints += altPoints;
+  //     updateTeamInfo[name].goals += goals;
+  //     updateTeamInfo[name].matchHistory.push(result);
+  //     console.log(`post ${JSON.stringify(updateTeamInfo[name])}`);
+  //   } else {
+  //     updateTeamInfo[name] = {};
+  //     console.log(`pre ${JSON.stringify(updateTeamInfo[name])}`);
+  //     updateTeamInfo[name]["teamName"] = name;
+  //     updateTeamInfo[name]["newPoints"] = points;
+  //     updateTeamInfo[name]["newAltPoints"] = altPoints;
+  //     updateTeamInfo[name]["goals"] = goals;
+  //     updateTeamInfo[name]["matchHistory"] = [result];
+  //     console.log(`post ${JSON.stringify(updateTeamInfo[name])}`);
+  //   }
+  // };
   for (const entry of formatted_input) {
     if (!currentTeams.has(entry.team1) || !currentTeams.has(entry.team2)) {
       continue;
@@ -328,205 +341,139 @@ app.post("/updateMatch", async (req, res) => {
       updateTeam(entry.team2, entry.team2Goals, "loss");
     }
   }
-  console.log(JSON.stringify(updateTeamInfo));
 
-  for (var team in updateTeamInfo) {
-    console.log(JSON.stringify(team));
-    team = updateTeamInfo[team];
-    console.log(JSON.stringify(team));
-    var params = {
-      TableName: tableName,
-      Key: { teamName: team.teamName },
-    };
-    var updateObj = {
-      TableName: tableName,
-      Key: {
-        teamName: team.teamName,
+  currentTeamInfo.sort((team1, team2) => {
+    team1RegDate = new Date(
+      2022,
+      Number(team1.registrationDate.split("/")[1]),
+      Number(team1.registrationDate.split("/")[0])
+    );
+    team2RegDate = new Date(
+      2022,
+      Number(team2.registrationDate.split("/")[1]),
+      Number(team2.registrationDate.split("/")[0])
+    );
+    if (team1.points > team2.points) {
+      return -1;
+    } else if (team1.points < team2.points) {
+      return 1;
+    } else if (team1.goalsScored > team2.goalsScored) {
+      return -1;
+    } else if (team1.goalsScored < team2.goalsScored) {
+      return 1;
+    } else if (team1.altPoints > team2.altPoints) {
+      return -1;
+    } else if (team1.altPoints < team2.altPoints) {
+      return 1;
+    } else if (team1RegDate < team2RegDate) {
+      return -1;
+    } else if (team1RegDate > team2RegDate) {
+      return 1;
+    } else {
+      return -1;
+    }
+  });
+  var group1qualified = 0;
+  var group2qualified = 0;
+  for (var team of currentTeamInfo) {
+    if ((team.groupNumber === "1") & (group1qualified < 4)) {
+      team.qualify = true;
+      group1qualified += 1;
+    } else if ((team.groupNumber === "2") & (group2qualified < 4)) {
+      team.qualify = true;
+      group2qualified += 1;
+    }
+  }
+  // console.log(JSON.stringify(updateTeamInfo));
+  console.log(JSON.stringify(currentTeamInfo));
+
+  // batch write
+  var group = [];
+  var remainingItems = currentTeamInfo.length;
+
+  for (team of currentTeamInfo) {
+    console.log(team);
+    var putRequest = {
+      PutRequest: {
+        Item: {
+          teamName: team.teamName,
+          registrationDate: team.registrationDate,
+          groupNumber: team.groupNumber,
+          points: team.points,
+          altPoints: team.altPoints,
+          goalsScored: team.goalsScored,
+          matchHistory: team.matchHistory,
+          qualify: team.qualify,
+        },
       },
     };
-    console.log(JSON.stringify(params));
-    console.log(JSON.stringify(updateObj));
-    await dynamoDB
-      .get(params)
-      .promise()
-      .then((data) => {
-        console.log(`team data ${JSON.stringify(data)}`);
-        console.log(`team pre updateObj ${JSON.stringify(updateObj)}`);
-        updateObj["UpdateExpression"] = "set points = :point, ";
-        updateObj["ExpressionAttributeValues"] = {
-          ":point": data.Item.points + team.newPoints,
-        };
-        updateObj["UpdateExpression"] += "altPoints = :altPoint, ";
-        updateObj["ExpressionAttributeValues"][":altPoint"] =
-          data.Item.altPoints + team.newAltPoints;
-        updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-        updateObj["ExpressionAttributeValues"][":goals"] =
-          data.Item.goalsScored + team.goals;
-        updateObj["UpdateExpression"] +=
-          "matchHistory = list_append(matchHistory, :matchResults)";
-        updateObj["ExpressionAttributeValues"][":matchResults"] =
-          team.matchHistory;
-        console.log(`team post updateObj ${JSON.stringify(updateObj)}`);
-      })
-      .catch((err) => {
-        res.status(400).send({ err });
-      });
-    await dynamoDB
-      .update(updateObj)
-      .promise()
-      .catch((err) => {
-        res.status(400).send({ err });
-      });
+    group.push(putRequest);
+    remainingItems--;
+    if (group.length === 25 || remainingItems < 1) {
+      var params = {
+        RequestItems: {
+          footballCompetition: group,
+        },
+      };
+      await dynamoDB.batchWrite(params).promise();
+
+      if (remainingItems > 0) {
+        group = [];
+      }
+    }
   }
-  // for (const entry of formatted_input) {
-  //   if (!currentTeams.has(entry.team1) || !currentTeams.has(entry.team2)) {
-  //     continue;
-  //   }
+
+  // for (var team in updateTeamInfo) {
+  //   console.log(JSON.stringify(team));
+  //   team = updateTeamInfo[team];
+  //   console.log(JSON.stringify(team));
   //   var params = {
   //     TableName: tableName,
-  //     Key: { teamName: "" },
+  //     Key: { teamName: team.teamName },
   //   };
   //   var updateObj = {
   //     TableName: tableName,
   //     Key: {
-  //       teamName: "",
+  //       teamName: team.teamName,
   //     },
   //   };
-  //   var draw = false;
-  //   var winner = {};
-  //   var loser = {};
-  //   if (entry.team1Goals === entry.team2Goals) {
-  //     draw = true;
-  //     params.Key.teamName = entry.team1;
-  //     updateObj.Key.teamName = entry.team1;
-  //     await dynamoDB
-  //       .get(params)
-  //       .promise()
-  //       .then((data) => {
-  //         console.log(`team 1 data ${JSON.stringify(data)}`);
-  //         console.log(`team 1 pre updateObj ${JSON.stringify(updateObj)}`);
-  //         updateObj["UpdateExpression"] = "set points = :point, ";
-  //         updateObj["ExpressionAttributeValues"] = {
-  //           ":point": data.Item.points + 1,
-  //         };
-  //         updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-  //         updateObj["ExpressionAttributeValues"][":goals"] =
-  //           data.Item.goalsScored + entry.team1Goals;
-  //         updateObj["UpdateExpression"] +=
-  //           "matchHistory = list_append(matchHistory, :matchResults)";
-  //         updateObj["ExpressionAttributeValues"][":matchResults"] = ["draw"];
-  //         console.log(`team 1 post updateObj ${JSON.stringify(updateObj)}`);
-  //       })
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //     await dynamoDB
-  //       .update(updateObj)
-  //       .promise()
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //     params.Key.teamName = entry.team2;
-  //     updateObj.Key.teamName = entry.team2;
-  //     await dynamoDB
-  //       .get(params)
-  //       .promise()
-  //       .then((data) => {
-  //         console.log(`team 2 data ${JSON.stringify(data)}`);
-  //         console.log(`team 2 pre updateObj ${JSON.stringify(updateObj)}`);
-  //         updateObj["UpdateExpression"] = "set points = :point, ";
-  //         updateObj["ExpressionAttributeValues"] = {
-  //           ":point": data.Item.points + 1,
-  //         };
-  //         updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-  //         updateObj["ExpressionAttributeValues"][":goals"] =
-  //           data.Item.goalsScored + entry.team2Goals;
-  //         updateObj["UpdateExpression"] +=
-  //           "matchHistory = list_append(matchHistory, :matchResults)";
-  //         updateObj["ExpressionAttributeValues"][":matchResults"] = ["draw"];
-  //         console.log(`team 2 post updateObj ${JSON.stringify(updateObj)}`);
-  //       })
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //     await dynamoDB
-  //       .update(updateObj)
-  //       .promise()
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //   } else if (entry.team1Goals > entry.team2Goals) {
-  //     winner = { teamName: entry.team1, goalsScored: entry.team1Goals };
-  //     loser = { teamName: entry.team2, goalsScored: entry.team2Goals };
-  //   } else {
-  //     winner = { teamName: entry.team2, goalsScored: entry.team2Goals };
-  //     loser = { teamName: entry.team1, goalsScored: entry.team1Goals };
-  //   }
-  //   if (!draw) {
-  //     console.log(draw);
-  //     console.log("Not Draw");
-  //     params.Key.teamName = winner.teamName;
-  //     updateObj.Key.teamName = winner.teamName;
-  //     await dynamoDB
-  //       .get(params)
-  //       .promise()
-  //       .then((data) => {
-  //         console.log(`winner data ${JSON.stringify(data)}`);
-  //         console.log(`winner pre updateObj ${JSON.stringify(updateObj)}`);
-  //         updateObj["UpdateExpression"] = "set points = :point, ";
-  //         updateObj["ExpressionAttributeValues"] = {
-  //           ":point": data.Item.points + 3,
-  //         };
-  //         updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-  //         updateObj["ExpressionAttributeValues"][":goals"] =
-  //           data.Item.goalsScored + winner.goalsScored;
-  //         updateObj["UpdateExpression"] +=
-  //           "matchHistory = list_append(matchHistory, :matchResults)";
-  //         updateObj["ExpressionAttributeValues"][":matchResults"] = ["win"];
-  //         console.log(`winner post updateObj ${JSON.stringify(updateObj)}`);
-  //       })
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //     await dynamoDB
-  //       .update(updateObj)
-  //       .promise()
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //     params.Key.teamName = loser.teamName;
-  //     updateObj.Key.teamName = loser.teamName;
-  //     await dynamoDB
-  //       .get(params)
-  //       .promise()
-  //       .then((data) => {
-  //         console.log(`loser data ${JSON.stringify(data)}`);
-  //         console.log(`loser pre updateObj ${JSON.stringify(updateObj)}`);
-  //         updateObj["UpdateExpression"] = "set points = :point, ";
-  //         updateObj["ExpressionAttributeValues"] = {
-  //           ":point": data.Item.points,
-  //         };
-  //         updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-  //         updateObj["ExpressionAttributeValues"][":goals"] =
-  //           data.Item.goalsScored + loser.goalsScored;
-  //         updateObj["UpdateExpression"] +=
-  //           "matchHistory = list_append(matchHistory, :matchResults)";
-  //         updateObj["ExpressionAttributeValues"][":matchResults"] = ["loss"];
-  //         console.log(`loser post updateObj ${JSON.stringify(updateObj)}`);
-  //       })
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //     await dynamoDB
-  //       .update(updateObj)
-  //       .promise()
-  //       .catch((err) => {
-  //         res.status(400).send({ err });
-  //       });
-  //   }
+  //   console.log(JSON.stringify(params));
+  //   console.log(JSON.stringify(updateObj));
+
+  // await dynamoDB
+  //   .get(params)
+  //   .promise()
+  //   .then((data) => {
+  //     console.log(`team data ${JSON.stringify(data)}`);
+  //     console.log(`team pre updateObj ${JSON.stringify(updateObj)}`);
+  //     updateObj["UpdateExpression"] = "set points = :point, ";
+  //     updateObj["ExpressionAttributeValues"] = {
+  //       ":point": data.Item.points + team.newPoints,
+  //     };
+  //     updateObj["UpdateExpression"] += "altPoints = :altPoint, ";
+  //     updateObj["ExpressionAttributeValues"][":altPoint"] =
+  //       data.Item.altPoints + team.newAltPoints;
+  //     updateObj["UpdateExpression"] += "goalsScored = :goals, ";
+  //     updateObj["ExpressionAttributeValues"][":goals"] =
+  //       data.Item.goalsScored + team.goals;
+  //     updateObj["UpdateExpression"] +=
+  //       "matchHistory = list_append(matchHistory, :matchResults)";
+  //     updateObj["ExpressionAttributeValues"][":matchResults"] =
+  //       team.matchHistory;
+  //     console.log(`team post updateObj ${JSON.stringify(updateObj)}`);
+  //   })
+  //   .catch((err) => {
+  //     res.status(400).send({ err });
+  //   });
+  // await dynamoDB
+  //   .update(updateObj)
+  //   .promise()
+  //   .catch((err) => {
+  //     res.status(400).send({ err });
+  //   });
   // }
   if (!res.headersSent) {
-    res.status(201).send({ message: "Matches Updated" });
+    res.status(201).send({ message: "Matches Updated", update: group });
   }
 });
 
