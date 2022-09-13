@@ -6,7 +6,6 @@ require("dotenv").config();
 const app = express();
 const port = 4000;
 const AWS = require("aws-sdk");
-const { response } = require("express");
 
 // parse application/json
 app.use(bodyParser.json());
@@ -210,7 +209,10 @@ app.post("/removeTeams", async (req, res) => {
         res.status(400).send({ err });
       }
     })
-    .promise();
+    .promise()
+    .catch((err) => {
+      res.status(400).send({ err });
+    });
   console.log(data);
   items = [...items, ...data.Items];
   var remainingItems = items.length;
