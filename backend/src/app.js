@@ -41,7 +41,7 @@ const getTeamByName = async (name) => {
   return output;
 };
 
-// ADD NEW TEAM
+// ADD NEW TEAMS
 // --------------------------------------------
 app.post("/team", async (req, res) => {
   // format text input
@@ -112,7 +112,7 @@ app.post("/team", async (req, res) => {
     }
   }
   if (!res.headersSent) {
-    res.status(201).send(output);
+    res.status(201).send({ teams: output });
   }
 });
 
@@ -130,60 +130,22 @@ app.post("/getTeamDetails", async (req, res) => {
 // LIST DETAILS OF ALL TEAMS
 // --------------------------------------------
 app.post("/getTeams", async (req, res) => {
-  // const params = {
-  //   TableName: tableName,
-  // };
-  // dynamoDB.scan(params, function (err, data) {
-  //   if (err) {
-  //     res.status(400).send({ err });
-  //   } else {
-  //     res.status(200).send(data.Items);
-  //   }
-  // });
   const params = {
     TableName: tableName,
   };
-  // var output = {};
-  var data = await dynamoDB
+  await dynamoDB
     .scan(params)
     .promise()
     .then((data) => {
-      res.status(200).send(data.Items);
+      res.status(200).send({ teams: data.Items });
       return data;
-      // var groups = {};
-      // for (const team in data.Items) {
-      //   if (data.Items[team].groupNumber in groups) {
-      //     groups[data.Items[team].groupNumber][data.Items[team].teamName] = {
-      //       teamName: data.Items[team].teamName,
-      //       registrationDate: data.Items[team].registrationDate,
-      //       points: data.Items[team].points,
-      //       altPoints: data.Items[team].altPoints,
-      //       goalsScored: data.Items[team].goalsScored,
-      //       matchHistory: data.Items[team].matchHistory,
-      //     };
-      //   } else {
-      //     groups[data.Items[team].groupNumber] = {};
-      //     groups[data.Items[team].groupNumber][data.Items[team].teamName] = {
-      //       teamName: data.Items[team].teamName,
-      //       registrationDate: data.Items[team].registrationDate,
-      //       points: data.Items[team].points,
-      //       altPoints: data.Items[team].altPoints,
-      //       goalsScored: data.Items[team].goalsScored,
-      //       matchHistory: data.Items[team].matchHistory,
-      //     };
-      //   }
-      //   output = data.Items;
-      // }
-      // if (!res.headersSent) {
-      //   res.status(200).send(output);
-      // }
-      // console.log(JSON.stringify(groups));
+    })
+    .catch((err) => {
+      res.status(404).send({ message: "Not Found!" });
     });
-  console.log(data);
-  console.log(data.Items);
 });
 
-// REMOVE TEAM
+// REMOVE SINGLE TEAM
 // --------------------------------------------
 app.post("/removeTeam", (req, res) => {
   const params = {
@@ -222,6 +184,8 @@ app.post("/removeTeams", async (req, res) => {
     group.push(deleteReq);
     remainingItems -= 1;
     console.log(JSON.stringify(group));
+
+    // write batch if group size is 25 (batch write limit) or if there are no other items
     if ((group.length === 25 || remainingItems < 1) & (group.length > 0)) {
       params = {
         RequestItems: {
@@ -234,24 +198,12 @@ app.post("/removeTeams", async (req, res) => {
         .catch((err) => {
           res.status(400).send({ err });
         });
-      group = [];
+      group = []; // reset group for the next batch
     }
   }
   if (!res.headersSent) {
     res.status(204).send({ message: "All teams deleted" });
   }
-  // params = {
-  //   RequestItems: {
-  //     [tableName]: group,
-  //   },
-  // };
-  // dynamoDB.batchWrite(params, function (err, data) {
-  //   if (err) {
-  //     res.status(400).send({ err });
-  //   } else {
-  //     res.sendStatus(204);
-  //   }
-  // });
 });
 
 // UPDATE MATCH
@@ -259,8 +211,6 @@ app.post("/removeTeams", async (req, res) => {
 app.post("/updateMatch", async (req, res) => {
   // format text input
   input = req.body.text.split(`\n`);
-  // var output = [];
-  // var remainingItems = input.length;
   var formatted_input = [];
   for (const entry of input) {
     fields = entry.split(` `);
@@ -286,7 +236,8 @@ app.post("/updateMatch", async (req, res) => {
         currentTeamInfo.push(item);
       }
     });
-  // var updateTeamInfo = {};
+
+  // function to update team information
   const updateTeam = (name, goals, result) => {
     var addPoints = 3;
     var addAltPoints = 5;
@@ -308,28 +259,12 @@ app.post("/updateMatch", async (req, res) => {
     });
   };
 
-  //   if (name in updateTeamInfo) {
-  //     console.log(`pre ${JSON.stringify(updateTeamInfo[name])}`);
-  //     updateTeamInfo[name].newPoints += points;
-  //     updateTeamInfo[name].newAltPoints += altPoints;
-  //     updateTeamInfo[name].goals += goals;
-  //     updateTeamInfo[name].matchHistory.push(result);
-  //     console.log(`post ${JSON.stringify(updateTeamInfo[name])}`);
-  //   } else {
-  //     updateTeamInfo[name] = {};
-  //     console.log(`pre ${JSON.stringify(updateTeamInfo[name])}`);
-  //     updateTeamInfo[name]["teamName"] = name;
-  //     updateTeamInfo[name]["newPoints"] = points;
-  //     updateTeamInfo[name]["newAltPoints"] = altPoints;
-  //     updateTeamInfo[name]["goals"] = goals;
-  //     updateTeamInfo[name]["matchHistory"] = [result];
-  //     console.log(`post ${JSON.stringify(updateTeamInfo[name])}`);
-  //   }
-  // };
   for (const entry of formatted_input) {
     if (!currentTeams.has(entry.team1) || !currentTeams.has(entry.team2)) {
       continue;
     }
+
+    // update points, goals and match history
     if (entry.team1Goals === entry.team2Goals) {
       updateTeam(entry.team1, entry.team1Goals, "draw");
       updateTeam(entry.team2, entry.team2Goals, "draw");
@@ -342,6 +277,7 @@ app.post("/updateMatch", async (req, res) => {
     }
   }
 
+  // tabulate qualified teams
   currentTeamInfo.sort((team1, team2) => {
     team1RegDate = new Date(
       2022,
@@ -384,7 +320,6 @@ app.post("/updateMatch", async (req, res) => {
       group2qualified += 1;
     }
   }
-  // console.log(JSON.stringify(updateTeamInfo));
   console.log(JSON.stringify(currentTeamInfo));
 
   // batch write
@@ -409,7 +344,9 @@ app.post("/updateMatch", async (req, res) => {
     };
     group.push(putRequest);
     remainingItems--;
-    if (group.length === 25 || remainingItems < 1) {
+
+    // write batch if group size is 25 (batch write limit) or if there are no other items
+    if ((group.length === 25 || remainingItems < 1) & (group.length > 0)) {
       var params = {
         RequestItems: {
           footballCompetition: group,
@@ -418,60 +355,10 @@ app.post("/updateMatch", async (req, res) => {
       await dynamoDB.batchWrite(params).promise();
 
       if (remainingItems > 0) {
-        group = [];
+        group = []; // reset group if there are other items
       }
     }
   }
-
-  // for (var team in updateTeamInfo) {
-  //   console.log(JSON.stringify(team));
-  //   team = updateTeamInfo[team];
-  //   console.log(JSON.stringify(team));
-  //   var params = {
-  //     TableName: tableName,
-  //     Key: { teamName: team.teamName },
-  //   };
-  //   var updateObj = {
-  //     TableName: tableName,
-  //     Key: {
-  //       teamName: team.teamName,
-  //     },
-  //   };
-  //   console.log(JSON.stringify(params));
-  //   console.log(JSON.stringify(updateObj));
-
-  // await dynamoDB
-  //   .get(params)
-  //   .promise()
-  //   .then((data) => {
-  //     console.log(`team data ${JSON.stringify(data)}`);
-  //     console.log(`team pre updateObj ${JSON.stringify(updateObj)}`);
-  //     updateObj["UpdateExpression"] = "set points = :point, ";
-  //     updateObj["ExpressionAttributeValues"] = {
-  //       ":point": data.Item.points + team.newPoints,
-  //     };
-  //     updateObj["UpdateExpression"] += "altPoints = :altPoint, ";
-  //     updateObj["ExpressionAttributeValues"][":altPoint"] =
-  //       data.Item.altPoints + team.newAltPoints;
-  //     updateObj["UpdateExpression"] += "goalsScored = :goals, ";
-  //     updateObj["ExpressionAttributeValues"][":goals"] =
-  //       data.Item.goalsScored + team.goals;
-  //     updateObj["UpdateExpression"] +=
-  //       "matchHistory = list_append(matchHistory, :matchResults)";
-  //     updateObj["ExpressionAttributeValues"][":matchResults"] =
-  //       team.matchHistory;
-  //     console.log(`team post updateObj ${JSON.stringify(updateObj)}`);
-  //   })
-  //   .catch((err) => {
-  //     res.status(400).send({ err });
-  //   });
-  // await dynamoDB
-  //   .update(updateObj)
-  //   .promise()
-  //   .catch((err) => {
-  //     res.status(400).send({ err });
-  //   });
-  // }
   if (!res.headersSent) {
     res.status(201).send({ message: "Matches Updated", update: group });
   }
