@@ -41,6 +41,38 @@ const getTeamByName = async (name) => {
   return output;
 };
 
+const sortTeam = (team1, team2) => {
+  team1RegDate = new Date(
+    2022,
+    Number(team1.registrationDate.split("/")[1]),
+    Number(team1.registrationDate.split("/")[0])
+  );
+  team2RegDate = new Date(
+    2022,
+    Number(team2.registrationDate.split("/")[1]),
+    Number(team2.registrationDate.split("/")[0])
+  );
+  if (team1.points > team2.points) {
+    return -1;
+  } else if (team1.points < team2.points) {
+    return 1;
+  } else if (team1.goalsScored > team2.goalsScored) {
+    return -1;
+  } else if (team1.goalsScored < team2.goalsScored) {
+    return 1;
+  } else if (team1.altPoints > team2.altPoints) {
+    return -1;
+  } else if (team1.altPoints < team2.altPoints) {
+    return 1;
+  } else if (team1RegDate < team2RegDate) {
+    return -1;
+  } else if (team1RegDate > team2RegDate) {
+    return 1;
+  } else {
+    return -1;
+  }
+};
+
 // ADD NEW TEAMS
 // --------------------------------------------
 app.post("/team", async (req, res) => {
@@ -137,7 +169,19 @@ app.post("/getTeams", async (req, res) => {
     .scan(params)
     .promise()
     .then((data) => {
-      res.status(200).send({ teams: data.Items });
+      group1 = [];
+      group2 = [];
+      console.log(JSON.stringify(data.Items));
+      for (team of data.Items) {
+        if (team.groupNumber === "1") {
+          group1.push(team);
+        } else if (team.groupNumber === "2") {
+          group2.push(team);
+        }
+      }
+      group1.sort(sortTeam);
+      group2.sort(sortTeam);
+      res.status(200).send({ group1: group1, group2: group2 });
       return data;
     })
     .catch((err) => {
@@ -278,37 +322,7 @@ app.post("/updateMatch", async (req, res) => {
   }
 
   // tabulate qualified teams
-  currentTeamInfo.sort((team1, team2) => {
-    team1RegDate = new Date(
-      2022,
-      Number(team1.registrationDate.split("/")[1]),
-      Number(team1.registrationDate.split("/")[0])
-    );
-    team2RegDate = new Date(
-      2022,
-      Number(team2.registrationDate.split("/")[1]),
-      Number(team2.registrationDate.split("/")[0])
-    );
-    if (team1.points > team2.points) {
-      return -1;
-    } else if (team1.points < team2.points) {
-      return 1;
-    } else if (team1.goalsScored > team2.goalsScored) {
-      return -1;
-    } else if (team1.goalsScored < team2.goalsScored) {
-      return 1;
-    } else if (team1.altPoints > team2.altPoints) {
-      return -1;
-    } else if (team1.altPoints < team2.altPoints) {
-      return 1;
-    } else if (team1RegDate < team2RegDate) {
-      return -1;
-    } else if (team1RegDate > team2RegDate) {
-      return 1;
-    } else {
-      return -1;
-    }
-  });
+  currentTeamInfo.sort(sortTeam);
   var group1qualified = 0;
   var group2qualified = 0;
   for (var team of currentTeamInfo) {
