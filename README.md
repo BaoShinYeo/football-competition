@@ -46,8 +46,6 @@ npx serverless deploy
 
 ## Frontend App
 
-```
-
 ### Running the application
 
 1. Go to frontend folder
@@ -71,7 +69,5 @@ npm i
 ```
 
 npm run start
-
-```
 
 ```
