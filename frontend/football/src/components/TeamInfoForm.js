@@ -7,6 +7,8 @@ import React, { useState } from "react";
 function TeamInfoForm() {
   const [teamInfo, setTeamInfo] = useState("");
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -20,8 +22,13 @@ function TeamInfoForm() {
       );
       console.log(response?.data);
       console.log(JSON.stringify(response));
+      setError(false);
       setSuccess(true);
     } catch (err) {
+      setError(true);
+      console.log(err);
+      console.log(err.response.data.error);
+      setErrorMessage(err.response.data.error);
       console.log("API Call Failure");
       console.log(err);
     }
@@ -31,8 +38,8 @@ function TeamInfoForm() {
     event.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4000/removeTeams"
-        // "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com
+        // "http://localhost:4000/removeTeams"
+        "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com"
       );
       console.log(response?.data);
       console.log(JSON.stringify(response));
@@ -76,6 +83,7 @@ function TeamInfoForm() {
                 placeholder={`<TeamName> <RegistrationDate> <GroupNumber>\ne.g. \nFriendlyOtter 14/09 1\nDashingMerlion 13/09 1`}
                 onChange={(event) => setTeamInfo(event.target.value)}
               />
+              {error ? <p style={{ color: "red" }}>{errorMessage}</p> : <br />}
             </Form.Group>
             <Button variant="primary" type="submit" onClick={handleSubmit}>
               Submit

@@ -11,7 +11,11 @@ const AWS = require("aws-sdk");
 app.use(bodyParser.json());
 
 // enable cors
-app.use(cors());
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
 let awsConfig = {
   region: "ap-southeast-1",
@@ -77,12 +81,26 @@ const sortTeam = (team1, team2) => {
 // --------------------------------------------
 app.post("/team", async (req, res) => {
   // format text input
-  input = req.body.text.split(`\n`);
+  input = req.body.text.trim().split(`\n`);
   var output = [];
   var remainingItems = input.length;
   var formatted_input = [];
   for (const entry of input) {
     fields = entry.split(` `);
+
+    // check for form input
+    try {
+      dayGiven = Number(fields[1].split("/")[0]);
+      monthGiven = Number(fields[1].split("/")[1]);
+      if (dayGiven < 1 || dayGiven > 31 || monthGiven < 1 || monthGiven > 12)
+        throw "Invalid Date"; // check for valid date
+      if ((fields[2] !== "1") & (fields[2] !== "2")) throw "Invalid Group";
+    } catch (err) {
+      console.log(err);
+      if (!res.headersSent) {
+        res.status(400).send({ error: `Invalid Input! ${err}` });
+      }
+    }
     formatted_input.push({
       teamName: fields[0],
       registrationDate: fields[1],
@@ -137,7 +155,9 @@ app.post("/team", async (req, res) => {
         .batchWrite(params)
         .promise()
         .catch((err) => {
-          res.status(400).send({ err });
+          if (!res.headersSent) {
+            res.status(400).send({ error: err });
+          }
         });
       output.push(params.RequestItems.footballCompetition);
       params.RequestItems.footballCompetition = [];
@@ -153,7 +173,7 @@ app.post("/team", async (req, res) => {
 app.post("/getTeamDetails", async (req, res) => {
   data = await getTeamByName(req.body.teamName);
   if (data.length === 0) {
-    res.status(404).send({ message: "Team Not Found!" });
+    res.status(404).send({ error: "Team Not Found!" });
   } else {
     res.status(200).send({ data });
   }
@@ -185,7 +205,9 @@ app.post("/getTeams", async (req, res) => {
       return data;
     })
     .catch((err) => {
-      res.status(404).send({ message: "Not Found!" });
+      if (!res.headersSent) {
+        res.status(404).send({ error: "Not Found!" });
+      }
     });
 });
 
@@ -198,7 +220,9 @@ app.post("/removeTeam", (req, res) => {
   };
   dynamoDB.delete(params, function (err, data) {
     if (err) {
-      res.status(400).send({ err });
+      if (!res.headersSent) {
+        res.status(400).send({ error: err });
+      }
     } else {
       res.sendStatus(204);
     }
@@ -217,7 +241,9 @@ app.post("/removeTeams", async (req, res) => {
     .scan(params)
     .promise()
     .catch((err) => {
-      res.status(400).send({ err });
+      if (!res.headersSent) {
+        res.status(400).send({ error: err });
+      }
     });
   console.log(`${JSON.stringify(data)}`);
   items = [...items, ...data.Items];
@@ -240,7 +266,9 @@ app.post("/removeTeams", async (req, res) => {
         .batchWrite(params)
         .promise()
         .catch((err) => {
-          res.status(400).send({ err });
+          if (!res.headersSent) {
+            res.status(400).send({ error: err });
+          }
         });
       group = []; // reset group for the next batch
     }
@@ -254,7 +282,7 @@ app.post("/removeTeams", async (req, res) => {
 // --------------------------------------------
 app.post("/updateMatch", async (req, res) => {
   // format text input
-  input = req.body.text.split(`\n`);
+  input = req.body.text.trim().split(`\n`);
   var formatted_input = [];
   for (const entry of input) {
     fields = entry.split(` `);

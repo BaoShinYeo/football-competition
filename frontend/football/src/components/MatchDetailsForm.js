@@ -7,6 +7,8 @@ import React, { useState } from "react";
 function MatchDetailsForm() {
   const [matchInfo, setMatchInfo] = useState("");
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -20,8 +22,13 @@ function MatchDetailsForm() {
       );
       console.log(response?.data);
       console.log(JSON.stringify(response));
+      setError(false);
       setSuccess(true);
     } catch (err) {
+      setError(true);
+      console.log(err);
+      console.log(err.response.data.error);
+      setErrorMessage(err.response.data.error);
       console.log("API Call Failure");
       console.log(err);
     }
@@ -58,6 +65,7 @@ function MatchDetailsForm() {
                 placeholder={`<Team1Name> <Team2Name> <Team1GoalsScored> <Team2GoalsScored>\ne.g. FriendlyOtter DashingMerlion 1 1\nFriendlyOtter DashingMerlion 2 2`}
                 onChange={(event) => setMatchInfo(event.target.value)}
               />
+              {error ? <p style={{ color: "red" }}>{errorMessage}</p> : <br />}
             </Form.Group>
             <Button variant="primary" type="submit" onClick={handleSubmit}>
               Submit

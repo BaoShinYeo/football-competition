@@ -32,7 +32,9 @@ export default function Navigationbar() {
                   to="adjust"
                   style={{ textDecoration: "none", color: "black" }}
                 >
-                  Add/Remove Teams
+                  <div>
+                    <p>Add/Remove Teams</p>
+                  </div>
                 </Link>
               </NavDropdown.Item>
               <NavDropdown.Item>
@@ -40,22 +42,13 @@ export default function Navigationbar() {
                   to="match"
                   style={{ textDecoration: "none", color: "black" }}
                 >
-                  Update Matches
+                  <div>
+                    <p>Update Matches</p>
+                  </div>
                 </Link>
               </NavDropdown.Item>
-              {/* <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
-              <NavDropdown.Divider />
-              <NavDropdown.Item href="#action/3.4">
-                Separated link
-              </NavDropdown.Item> */}
             </NavDropdown>
           </Nav>
-          {/* <Nav>
-            <Nav.Link href="#deets">More deets</Nav.Link>
-            <Nav.Link eventKey={2} href="#memes">
-              Dank memes
-            </Nav.Link>
-          </Nav> */}
         </Navbar.Collapse>
       </Container>
     </Navbar>
