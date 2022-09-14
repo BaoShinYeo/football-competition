@@ -4,7 +4,7 @@ function FormSelection() {
   return (
     <Dropdown>
       <Dropdown.Toggle variant="success" id="dropdown-basic">
-        Dropdown Button
+        Choose Group
       </Dropdown.Toggle>
 
       <Dropdown.Menu>

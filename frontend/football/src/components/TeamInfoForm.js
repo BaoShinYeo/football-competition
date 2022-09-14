@@ -12,8 +12,8 @@ function TeamInfoForm() {
     event.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4000/team",
-        // "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com/dev/team",
+        // "http://localhost:4000/team",
+        "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com/dev/team",
         {
           text: teamInfo,
         }
@@ -68,7 +68,7 @@ function TeamInfoForm() {
               className="mb-3"
               controlId="exampleForm.ControlTextarea1"
             >
-              <Form.Label>Team Information</Form.Label>
+              <Form.Label className="text-muted">Team Information</Form.Label>
               <Form.Control
                 as="textarea"
                 rows={12}

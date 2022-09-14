@@ -5,6 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Navigationbar from "./components/Navigationbar";
 import Home from "./pages/Home";
 import AdjustTeam from "./pages/AdjustTeam";
+import UpdateMatch from "./pages/UpdateMatch";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/adjust" element={<AdjustTeam />} />
+            <Route path="/match" element={<UpdateMatch />} />
           </Routes>
         </header>
       </div>

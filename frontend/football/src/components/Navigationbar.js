@@ -17,7 +17,9 @@ export default function Navigationbar() {
             height="30"
             className="d-inline-block align-top"
           />{" "}
-          Govtech Football Championship
+          <Link to="/" style={{ textDecoration: "none", color: "white" }}>
+            Govtech Football Championship
+          </Link>
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="responsive-navbar-nav" />
         <Navbar.Collapse id="responsive-navbar-nav">
@@ -26,10 +28,20 @@ export default function Navigationbar() {
             {/* <Nav.Link href="/team">Team Management</Nav.Link> */}
             <NavDropdown title="Team Management" id="collasible-nav-dropdown">
               <NavDropdown.Item>
-                <Link to="adjust">Add/Remove Teams</Link>
+                <Link
+                  to="adjust"
+                  style={{ textDecoration: "none", color: "black" }}
+                >
+                  Add/Remove Teams
+                </Link>
               </NavDropdown.Item>
-              <NavDropdown.Item href="#action/3.2">
-                Update Matches
+              <NavDropdown.Item>
+                <Link
+                  to="match"
+                  style={{ textDecoration: "none", color: "black" }}
+                >
+                  Update Matches
+                </Link>
               </NavDropdown.Item>
               {/* <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
               <NavDropdown.Divider />

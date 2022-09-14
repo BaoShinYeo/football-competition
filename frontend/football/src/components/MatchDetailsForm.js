@@ -12,8 +12,8 @@ function MatchDetailsForm() {
     event.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4000/team",
-        // "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com/dev/updateMatch",
+        // "http://localhost:4000/team",
+        "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com/dev/updateMatch",
         {
           text: matchInfo,
         }
@@ -42,20 +42,28 @@ function MatchDetailsForm() {
           </Link>
         </section>
       ) : (
-        <Form>
-          <Form.Group className="mb-3" controlId="exampleForm.ControlTextarea1">
-            <Form.Label>Match Information</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={12}
-              placeholder={`<Team1Name> <Team2Name> <Team1GoalsScored> <Team2GoalsScored>\ne.g. FriendlyOtter DashingMerlion 1 1\nFriendlyOtter DashingMerlion 2 2`}
-              onChange={(event) => setMatchInfo(event.target.value)}
-            />
-          </Form.Group>
-          <Button variant="primary" type="submit" onClick={handleSubmit}>
-            Submit
-          </Button>
-        </Form>
+        <div>
+          <br />
+          <h1>Update Match Details via this form</h1>
+          <Form>
+            <Form.Group
+              className="mb-3"
+              controlId="exampleForm.ControlTextarea1"
+            >
+              <Form.Label className="text-muted">Match Information</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={12}
+                cols={100}
+                placeholder={`<Team1Name> <Team2Name> <Team1GoalsScored> <Team2GoalsScored>\ne.g. FriendlyOtter DashingMerlion 1 1\nFriendlyOtter DashingMerlion 2 2`}
+                onChange={(event) => setMatchInfo(event.target.value)}
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit" onClick={handleSubmit}>
+              Submit
+            </Button>
+          </Form>
+        </div>
       )}
     </div>
   );
