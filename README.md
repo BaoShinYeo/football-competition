@@ -1,5 +1,7 @@
 # football-competition
 
+Application is live at https://6321f9ed6f7e671933e0427b--footballcompetition.netlify.app/
+
 ## Backend APIs
 
 ### Prerequisites
@@ -10,7 +12,7 @@
 
 ### Running the application
 
-Application is running on a deployed server, but if you choose to run it locally, you can follow these instructions
+Backend application is running on a deployed server, but if you choose to run it locally, you can follow these instructions
 
 1. Go to backend folder
 
@@ -48,26 +50,22 @@ npx serverless deploy
 
 ### Running the application
 
+Frontend application is running on a deployed server, but if you choose to run it locally, you can follow these instructions
+
 1. Go to frontend folder
 
 ```
-
 cd frontend/my-app
-
 ```
 
 2. Install packages
 
 ```
-
 npm i
-
 ```
 
 3. Run the application.
 
 ```
-
 npm run start
-
 ```

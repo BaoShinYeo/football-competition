@@ -3,3 +3,5 @@
 env/
 ENV/
 env.bak/
+# Local Netlify folder
+.netlify
