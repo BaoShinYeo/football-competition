@@ -1,6 +1,6 @@
 # football-competition
 
-Application is live at https://6321f9ed6f7e671933e0427b--footballcompetition.netlify.app/
+Application is live at https://6322814fdd68dd2b50297e6e--footballcompetition.netlify.app/
 
 ## Backend APIs
 

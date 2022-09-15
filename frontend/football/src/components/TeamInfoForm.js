@@ -39,7 +39,7 @@ function TeamInfoForm() {
     try {
       const response = await axios.post(
         // "http://localhost:4000/removeTeams"
-        "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com"
+        "https://mfgc5kw6dd.execute-api.ap-southeast-1.amazonaws.com/dev/removeTeams"
       );
       console.log(response?.data);
       console.log(JSON.stringify(response));
